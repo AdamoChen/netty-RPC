@@ -12,5 +12,13 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RemotServcie {
+// todo 是否需要实例化
+public @interface RemoteService {
+
+    /**
+     * 服务名
+     * @return
+     */
+    String value();
+
 }

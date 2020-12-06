@@ -1,24 +1,20 @@
 package org.chen.netty;
 
+import com.adamo.service.dto.Response;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.util.concurrent.EventExecutorGroup;
-
-import java.util.List;
 
 /**
  * @author chenchonggui
  * @version 1.0
  * @date_time 2020/12/2 20:10
  */
-public class JsonDecoder extends LengthFieldBasedFrameDecoder {
+public class ResponseJsonDecoder extends LengthFieldBasedFrameDecoder {
 
-    public JsonDecoder() {
-        super(Integer.MAX_VALUE, 0, 4, 0, 0);
+    public ResponseJsonDecoder() {
+        super(Integer.MAX_VALUE, 0, 4, 0, 4);
     }
 
     @Override
@@ -30,8 +26,7 @@ public class JsonDecoder extends LengthFieldBasedFrameDecoder {
         int length = byteBuf.readableBytes();
         byte[] bytes = new byte[length];
         byteBuf.readBytes(bytes);
-        // 这里的解析小技巧
-        Object obj = JSONObject.parse(bytes);
-        return obj;
+        // 这里必须要解析成具体类的实例 否则下一步强转会失败
+        return JSONObject.parseObject(bytes, Response.class, null);
     }
 }

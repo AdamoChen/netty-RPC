@@ -21,6 +21,7 @@
         <module>netty-rpc-common</module>
         <module>service-a</module>
         <module>service-b</module>
+        <module>service-common</module>
     </modules>
 
     <properties>
