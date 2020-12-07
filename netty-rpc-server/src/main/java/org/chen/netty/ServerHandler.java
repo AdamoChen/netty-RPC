@@ -34,10 +34,9 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
                 Class<?> serviceClass = service.getClass();
                 Method serviceMethod = serviceClass.getMethod(msg.getMethodName(), msg.getArgsType());
                 serviceMethod.setAccessible(true);
-                // todo ccg 注意的地方 参数类型的问题
-                Object result = serviceMethod.invoke(service, msg.getArgs());
+                Object result = serviceMethod.invoke(service, convertArgs(msg.getArgs(), msg.getArgsType()));
                 response.setCode(StatusCodeEnum.SUCCESS.code);
-                response.setData(JSONObject.toJSONString(result));
+                response.setData(result);
             }else{
                 log.error("未找服务：{}", msg.getClassFullName());
                 //throw new Exception("未找服务：" + msg.getClassFullName());
@@ -50,5 +49,27 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
             response.setData("response of heart beat");
         }
         ctx.writeAndFlush(response);
+    }
+
+    /**
+     * 由于request args 为Object的数组，前面强转后并未转成指定的类型（保留JsonObject类型）
+     * @param args
+     * @param argsType
+     * @return
+     */
+    private Object[] convertArgs(Object[] args, Class<?>[] argsType) {
+        if(args == null || args.length == 0){
+            return args;
+        }
+        Object[] convertedObjArr = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            // 空值参数
+            if(args[i] == null){
+                convertedObjArr[i] = null;
+                continue;
+            }
+            convertedObjArr[i] = JSONObject.parseObject(args[i].toString(), argsType[i]);
+        }
+        return convertedObjArr;
     }
 }

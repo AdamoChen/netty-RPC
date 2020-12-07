@@ -8,14 +8,9 @@ public class Response {
 
     private String errorMsg;
 
-    private String data;
+    private Object data;
 
     private boolean heartBeat;
-
-    public Response() {
-
-    }
-
 
     public Response(String requestId, boolean heartBeat) {
         this.requestId = requestId;
@@ -46,11 +41,11 @@ public class Response {
         this.requestId = requestId;
     }
 
-    public String getData() {
+    public Object getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(Object data) {
         this.data = data;
     }
 

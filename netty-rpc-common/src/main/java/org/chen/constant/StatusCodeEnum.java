@@ -1,7 +1,7 @@
 package org.chen.constant;
 
 public enum  StatusCodeEnum {
-    SUCCESS(0, "成功"),
+    SUCCESS(1, "成功"),
     FAILURE(-1, "失败"),
     ;
 

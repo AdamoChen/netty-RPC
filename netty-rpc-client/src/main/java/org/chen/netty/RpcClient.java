@@ -151,6 +151,7 @@ public class RpcClient{
         String hostPort = "127.0.0.1:8888";
         list.add(hostPort);
         map.put(serviceName, list);
+
         client.updateServiceNameChannel(map);
 
         Request request = new Request();
@@ -182,6 +183,15 @@ public class RpcClient{
         try {
             Response response = client.send(request, serviceName);
             System.out.println(JSONObject.toJSON(response));
+
+            request.setMethodName("findAllStudent");
+            request.setArgs(null);
+            request.setArgsType(null);
+            Response response2 = client.send(request, serviceName);
+            System.out.println(JSONObject.toJSON(response2));
+
+
+            System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
         }
