@@ -151,7 +151,7 @@ public class RpcClient{
         String hostPort = "127.0.0.1:8888";
         list.add(hostPort);
         map.put(serviceName, list);
-
+        // ------------
         client.updateServiceNameChannel(map);
 
         Request request = new Request();

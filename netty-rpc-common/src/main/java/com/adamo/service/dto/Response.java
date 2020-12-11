@@ -2,6 +2,7 @@ package com.adamo.service.dto;
 
 public class Response {
 
+    // todo 需要么？？
     private String requestId;
 
     private int code;
