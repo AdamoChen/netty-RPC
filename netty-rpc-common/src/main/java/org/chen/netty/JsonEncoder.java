@@ -2,14 +2,8 @@ package org.chen.netty;
 
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
-import io.netty.handler.codec.MessageToMessageEncoder;
-import io.netty.util.concurrent.EventExecutorGroup;
-
-import java.util.List;
 
 /**
  * @author chenchonggui

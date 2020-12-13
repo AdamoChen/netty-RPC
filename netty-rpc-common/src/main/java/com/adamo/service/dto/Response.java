@@ -1,8 +1,7 @@
 package com.adamo.service.dto;
 
-public class Response {
+public class Response{
 
-    // todo 需要么？？
     private String requestId;
 
     private int code;
@@ -12,6 +11,9 @@ public class Response {
     private Object data;
 
     private boolean heartBeat;
+
+    // note 必须保留 否则fastjson反序列化存在问题
+    public Response() { }
 
     public Response(String requestId, boolean heartBeat) {
         this.requestId = requestId;

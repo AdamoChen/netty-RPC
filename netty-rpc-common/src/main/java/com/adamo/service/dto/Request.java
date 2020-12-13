@@ -1,6 +1,6 @@
 package com.adamo.service.dto;
 
-public class Request {
+public class Request{
 
     private String requestId;
 

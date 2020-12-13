@@ -5,6 +5,8 @@ import com.alibaba.fastjson.JSONObject;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.chen.constant.StatusCodeEnum;
 import com.adamo.service.dto.Request;
 import org.slf4j.Logger;
@@ -44,7 +46,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
                 response.setErrorMsg("未找到服务："+ msg.getClassFullName() + "#" + msg.getMethodName());
             }
         }else{
-            log.info("客户端心跳：{}", ctx.channel().remoteAddress());
+            log.info("收到RPC客户端[{}]心跳", ctx.channel().remoteAddress());
             response.setCode(StatusCodeEnum.SUCCESS.code);
             response.setData("response of heart beat");
         }
@@ -71,5 +73,17 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
             convertedObjArr[i] = JSONObject.parseObject(args[i].toString(), argsType[i]);
         }
         return convertedObjArr;
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        super.userEventTriggered(ctx, evt);
+        if (evt instanceof IdleStateEvent){
+            IdleStateEvent event = (IdleStateEvent)evt;
+            if (event.state()== IdleState.ALL_IDLE){
+                log.info("RPC客户端[{}]已超过一定时长未读写数据，主动关闭连接。",ctx.channel().remoteAddress());
+                ctx.channel().close();
+            }
+        }
     }
 }

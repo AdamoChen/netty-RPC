@@ -1,10 +1,13 @@
 package org.chen.netty;
 
+import com.adamo.service.dto.Request;
 import com.adamo.service.dto.Response;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +39,10 @@ public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         super.channelRead(ctx, msg);
         Response response = (Response) msg;
+        if(response.isHeartBeat()){
+            log.info("RPC服务端[{}]心跳响应: {}", ctx.channel().remoteAddress(), response.getData());
+            return;
+        }
         SynchronousQueue<Response> queue = resultMap.get(response.getRequestId());
         queue.put(response);
         resultMap.remove(response.getRequestId());
@@ -56,6 +63,22 @@ public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
                 .findFirst()
                 .get()
                 .remove(ctx.channel().remoteAddress());
-        log.info("关闭远程服务[{}]", ctx.channel().remoteAddress());
+        log.info("RPC服务[{}]关闭连接", ctx.channel().remoteAddress());
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        super.userEventTriggered(ctx, evt);
+        log.info("RPC客户端向[{}]发送心跳", ctx.channel().remoteAddress());
+        if(evt instanceof IdleStateEvent){
+            IdleStateEvent stateEvent = (IdleStateEvent) evt;
+            if(stateEvent.state() == IdleState.ALL_IDLE){
+                Request request = new Request();
+                request.setHeartBeat(true);
+                ctx.writeAndFlush(request);
+            }
+        }
+    }
+
+
 }

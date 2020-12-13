@@ -10,11 +10,13 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.chen.constant.StatusCodeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
@@ -60,11 +62,27 @@ public class RpcClient{
                    @Override
                    protected void initChannel(SocketChannel ch) throws Exception {
                        ChannelPipeline pipeline = ch.pipeline();
-                       pipeline.addLast(new JsonEncoder())
+                       pipeline.addLast(new IdleStateHandler(0, 0, 30))
+                               .addLast(new JsonEncoder())
                                .addLast(new ResponseJsonDecoder())
                                .addLast(clientHandler);
                    }
                });
+    }
+
+
+    @PostConstruct
+    private void init(){
+          // todo 接入注册中心后修改
+        Map<String, List<String>> map = new HashMap<>();
+        List<String> list = new ArrayList<>();
+        String serviceName = "service-b";
+        String hostPort = "127.0.0.1:8888";
+        list.add(hostPort);
+        map.put(serviceName, list);
+        // ------------
+        updateServiceNameChannel(map);
+
     }
 
     // todo 在注册中心中被调用
@@ -118,11 +136,12 @@ public class RpcClient{
     }
 
     public Response send(Request request, String serviceName) throws Exception {
-        Collection<Channel> channels = serviceNameChannelMap.get(serviceName).values();
-        if (channels == null || channels.size() < 1) {
+        Map<String, Channel> channelMap = serviceNameChannelMap.get(serviceName);
+        if (channelMap == null || channelMap.size() < 1) {
             log.error("不存在[{}]远程服务实例", serviceName);
-            throw new Exception("不存在["+serviceName+"]远程服务实例");
+            throw new Exception("异常：不存在["+serviceName+"]远程服务实例");
         }
+        Collection<Channel> channels = channelMap.values();
         // todo 这里的服务发现处理可能存在变动
         int max = channels.size();
         Random random = new Random();
@@ -142,7 +161,7 @@ public class RpcClient{
         }
     }
 
-    // todo test
+    // 用于测试
     public static void main(String[] args) {
         RpcClient client = new RpcClient();
         Map<String, List<String>> map = new HashMap<>();

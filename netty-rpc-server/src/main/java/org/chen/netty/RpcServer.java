@@ -1,11 +1,11 @@
 package org.chen.netty;
 
-import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.chen.annotation.RemoteService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,27 +31,31 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
     private static final Logger log = LoggerFactory.getLogger(RpcServer.class);
 
     private ApplicationContext applicationContext;
-    ;
-    private final Map<String, Object> serviceMap = new HashMap<>(16);
+
+    /**
+     * 远程服务map
+     */
+    private final Map<String, Object> remoteServiceMap = new HashMap<>(16);
 
    // @Autowired
    // private DiscoveryClient discoveryClient;
 
     @Value("${rpc.server.port:8888}")
-    private String RPCPort;
+    private String serviceProviderPort;
 
     public RpcServer() {}
 
     public void init(){
         initService();
         bootNettyServer();
+        // todo 把服务注册到注册中心
     }
 
     private void bootNettyServer() {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workGroup = new NioEventLoopGroup(4);
-        // todo 这个共享问题已经出现了
-        ChannelHandler serverHandler = new ServerHandler(serviceMap);
+        // ccg 注意handler的共享问题
+        ChannelHandler serverHandler = new ServerHandler(remoteServiceMap);
        new Thread(()->{
            try {
                ServerBootstrap serverBootstrap = new ServerBootstrap();
@@ -64,15 +68,15 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
                            @Override
                            protected void initChannel(SocketChannel ch) throws Exception {
                                ChannelPipeline pipeline = ch.pipeline();
-
-                               pipeline.addLast(new JsonEncoder())
+                               pipeline.addLast(new IdleStateHandler(0,0,60))
+                                       .addLast(new JsonEncoder())
                                        .addLast(new RequestJsonDecoder())
                                        .addLast(serverHandler);
                            }
                        });
 
-               ChannelFuture future = serverBootstrap.bind(Integer.valueOf(RPCPort)).sync();
-               log.info("RPC 服务端启动~~~ 端口：{}",RPCPort);
+               ChannelFuture future = serverBootstrap.bind(Integer.valueOf(serviceProviderPort)).sync();
+               log.info("RPC 服务端启动~~~ 端口：{}", serviceProviderPort);
                future.channel().closeFuture().sync();
            } catch (Exception e) {
                log.error("rpc 服务启动失败 {}", e);
@@ -81,27 +85,21 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
 
     }
 
+    /**
+     * 初始化 注解为远程服务的接口
+     */
     private void initService() {
-        // todo 后面需要找开注释
         Map<String, Object> beans = applicationContext.getBeansWithAnnotation(RemoteService.class);
         beans.values().stream().forEach(b -> {
             Class<?> clazz = b.getClass();
             Class<?>[] interfaces = clazz.getInterfaces();
             Arrays.stream(interfaces).forEach(i -> {
-                serviceMap.put(i.getName(), b);
+                remoteServiceMap.put(i.getName(), b);
                 log.info("初始化服务接口-{}, 实例-{}", i.getName(), b);
             });
         });
         log.info("所有服务接口已加载完成");
     }
-
-    // todo test
-    public static void main(String[] args) {
-        RpcServer server = new RpcServer();
-        server.RPCPort = "8888";
-        server.init();
-    }
-
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -113,5 +111,10 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
         init();
     }
 
-
+    // 用于测试
+    public static void main(String[] args) {
+        RpcServer server = new RpcServer();
+        server.serviceProviderPort = "8888";
+        server.init();
+    }
 }
