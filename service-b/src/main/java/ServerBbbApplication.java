@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 1.0
  * @date_time 2020/12/1 20:57
  */
-@SpringBootApplication(scanBasePackages = {"com.adamo.service.*", "org.chen.*"})
+@SpringBootApplication(scanBasePackages = {"com.adamo.service.*"})
 public class ServerBbbApplication {
     public static void main(String[] args) {
         SpringApplication.run(ServerBbbApplication.class, args);
