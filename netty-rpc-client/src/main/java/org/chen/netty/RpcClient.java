@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
@@ -27,7 +26,7 @@ import java.util.concurrent.SynchronousQueue;
  * @date_time 2020/12/2 10:47
  */
 @Component
-public class RpcClient{
+public class RpcClient implements RemoteProcedureCallClient{
 
     private static final Logger log = LoggerFactory.getLogger(RpcClient.class);
 
@@ -70,22 +69,11 @@ public class RpcClient{
                });
     }
 
-
-    @PostConstruct
-    private void init(){
-          // todo 接入注册中心后修改
-        Map<String, List<String>> map = new HashMap<>();
-        List<String> list = new ArrayList<>();
-        String serviceName = "service-b";
-        String hostPort = "127.0.0.1:8888";
-        list.add(hostPort);
-        map.put(serviceName, list);
-        // ------------
-        updateServiceNameChannel(map);
-
-    }
-
-    // todo 在注册中心中被调用
+    /**
+     * 在注册中心中被调用
+     * @param map
+     */
+    @Override
     public void updateServiceNameChannel(Map<String, List<String>> map){
         if(map == null){
             log.warn("不存在任何远程服务！");
@@ -127,6 +115,7 @@ public class RpcClient{
     private Channel getChannel(String hostPort) {
         try {
             String[] hostPortArr = hostPort.split(":");
+            // ccg 这里需要注意的关键点
             ChannelFuture channelFuture = bootstrap.connect(hostPortArr[0], Integer.valueOf(hostPortArr[1])).sync();
             return channelFuture.channel();
         } catch (Exception e) {
@@ -135,6 +124,7 @@ public class RpcClient{
         }
     }
 
+    @Override
     public Response send(Request request, String serviceName) throws Exception {
         Map<String, Channel> channelMap = serviceNameChannelMap.get(serviceName);
         if (channelMap == null || channelMap.size() < 1) {
@@ -158,61 +148,6 @@ public class RpcClient{
             response.setCode(StatusCodeEnum.FAILURE.code);
             response.setErrorMsg("未连接到远程服务");
             return response;
-        }
-    }
-
-    // 用于测试
-    public static void main(String[] args) {
-        RpcClient client = new RpcClient();
-        Map<String, List<String>> map = new HashMap<>();
-        List<String> list = new ArrayList<>();
-        String serviceName = "service-bbb";
-        String hostPort = "127.0.0.1:8888";
-        list.add(hostPort);
-        map.put(serviceName, list);
-        // ------------
-        client.updateServiceNameChannel(map);
-
-        Request request = new Request();
-        //request.setRequestId(System.currentTimeMillis()+"");
-        //request.setHeartBeat(false);
-
-        Student student = new Student();
-        student.setClazzName("三班");
-        student.setId(1);
-        student.setName("张三");
-
-        Teacher t = new Teacher();
-        t.setClassName("三班");
-        t.setName("李四");
-        student.setClassTeacher(t);
-        List<String> courses = new ArrayList<>();
-        courses.add("语言");
-        courses.add("数学");
-        courses.add("天文");
-        student.setCourse(courses);
-
-        request.setRequestId(System.currentTimeMillis()+"");
-        request.setArgs(new Object[]{student});
-        request.setArgsType(new Class<?>[]{Student.class});
-        request.setClassFullName("com.adamo.service.StudentService");
-        request.setMethodName("addStudent");
-        request.setHeartBeat(false);
-
-        try {
-            Response response = client.send(request, serviceName);
-            System.out.println(JSONObject.toJSON(response));
-
-            request.setMethodName("findAllStudent");
-            request.setArgs(null);
-            request.setArgsType(null);
-            Response response2 = client.send(request, serviceName);
-            System.out.println(JSONObject.toJSON(response2));
-
-
-            System.exit(0);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

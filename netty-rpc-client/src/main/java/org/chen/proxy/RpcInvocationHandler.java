@@ -5,6 +5,7 @@ import com.adamo.service.dto.Response;
 import com.alibaba.fastjson.JSONObject;
 import org.chen.annotation.RemoteService;
 import org.chen.constant.StatusCodeEnum;
+import org.chen.netty.RemoteProcedureCallClient;
 import org.chen.netty.RpcClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ public class RpcInvocationHandler implements InvocationHandler {
     private static final Logger log = LoggerFactory.getLogger(RpcInvocationHandler.class);
 
     @Autowired
-    RpcClient rpcClient;
+    RemoteProcedureCallClient rpcClient;
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

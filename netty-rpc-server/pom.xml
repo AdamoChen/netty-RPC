@@ -16,6 +16,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <dependency>
             <artifactId>netty-rpc-common</artifactId>
             <groupId>org.chen</groupId>
             <version>1.0-SNAPSHOT</version>

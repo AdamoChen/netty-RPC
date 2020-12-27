@@ -7,16 +7,17 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.chen.annotation.RemoteService;
+import org.chen.serviceRegiste.ServiceInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ import java.util.Map;
  * @date_time 2020/12/2 10:47
  */
 @Component
-public class RpcServer implements ApplicationContextAware, InitializingBean {
+public class RpcServer implements ApplicationContextAware {
 
     private static final Logger log = LoggerFactory.getLogger(RpcServer.class);
 
@@ -37,18 +38,24 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
      */
     private final Map<String, Object> remoteServiceMap = new HashMap<>(16);
 
-   // @Autowired
-   // private DiscoveryClient discoveryClient;
-
     @Value("${rpc.server.port:8888}")
     private String serviceProviderPort;
 
     public RpcServer() {}
 
-    public void init(){
-        initService();
-        bootNettyServer();
-        // todo 把服务注册到注册中心
+    public ServiceInstance init(){
+        try {
+            String serviceName = initService();
+            bootNettyServer();
+            ServiceInstance instance = new ServiceInstance();
+            instance.setServiceName(serviceName);
+            instance.setPort(Integer.valueOf(serviceProviderPort));
+            instance.setIp(InetAddress.getLocalHost().getHostAddress());
+            return instance;
+        } catch (UnknownHostException e) {
+            log.error("init 异常", e);
+            return null;
+        }
     }
 
     private void bootNettyServer() {
@@ -88,17 +95,26 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
     /**
      * 初始化 注解为远程服务的接口
      */
-    private void initService() {
+    private String initService() {
         Map<String, Object> beans = applicationContext.getBeansWithAnnotation(RemoteService.class);
-        beans.values().stream().forEach(b -> {
+        // ccg 需要ip 端口能可以几个channel 应该只能是一个
+        String serviceName = null;
+        for (Object b : beans.values()) {
             Class<?> clazz = b.getClass();
             Class<?>[] interfaces = clazz.getInterfaces();
-            Arrays.stream(interfaces).forEach(i -> {
+            for (Class<?> i : interfaces) {
+                if (serviceName == null) {
+                    //拿到RemoteService 注解值 serviceName
+                    serviceName = i.getAnnotation(RemoteService.class).value();
+                }
+
+                // className -> instance
                 remoteServiceMap.put(i.getName(), b);
                 log.info("初始化服务接口-{}, 实例-{}", i.getName(), b);
-            });
-        });
+            }
+        }
         log.info("所有服务接口已加载完成");
+        return serviceName;
     }
 
     @Override
@@ -106,15 +122,4 @@ public class RpcServer implements ApplicationContextAware, InitializingBean {
         this.applicationContext = applicationContext;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        init();
-    }
-
-    // 用于测试
-    public static void main(String[] args) {
-        RpcServer server = new RpcServer();
-        server.serviceProviderPort = "8888";
-        server.init();
-    }
 }
