@@ -1,4 +1,8 @@
 #### netty-RPC
+git分支
+    base_rpc 基本的rpc可本机直接运行的实现，不依赖注册中心。
+    main 完整的版本，依赖nacos注册中心
+
 基于netty的RPC简单实现
 
 涉及的主要技术点：  

@@ -27,9 +27,11 @@ public class ServiceRegister {
     public void registerService(){
         try {
             ServiceInstance serviceInstance = rpcServer.init();
-            NamingService naming = NamingFactory.createNamingService(serveAddr);
-            naming.registerInstance(serviceInstance.getServiceName(), serviceInstance.getIp(), serviceInstance.getPort());
-            log.info("[{}]服务注册完成", serviceInstance.getServiceName());
+            if(serviceInstance != null) {
+                NamingService naming = NamingFactory.createNamingService(serveAddr);
+                naming.registerInstance(serviceInstance.getServiceName(), serviceInstance.getIp(), serviceInstance.getPort());
+                log.info("[{}]服务注册完成", serviceInstance.getServiceName());
+            }
         } catch (NacosException e) {
             log.error("注册服务异常", e);
         }

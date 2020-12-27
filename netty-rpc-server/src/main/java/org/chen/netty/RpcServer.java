@@ -1,5 +1,6 @@
 package org.chen.netty;
 
+import com.alibaba.fastjson.JSONObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -16,6 +17,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -46,6 +48,10 @@ public class RpcServer implements ApplicationContextAware {
     public ServiceInstance init(){
         try {
             String serviceName = initService();
+            if(serviceName == null){
+                log.info("此服务未对外提供rpc服务");
+                return null;
+            }
             bootNettyServer();
             ServiceInstance instance = new ServiceInstance();
             instance.setServiceName(serviceName);
@@ -101,6 +107,10 @@ public class RpcServer implements ApplicationContextAware {
         String serviceName = null;
         for (Object b : beans.values()) {
             Class<?> clazz = b.getClass();
+            if(Proxy.isProxyClass(clazz)){
+                log.info("[{}]为外部接口代理类，不合符本服务接口加载条件。", JSONObject.toJSON(clazz.getInterfaces()));
+                continue;
+            }
             Class<?>[] interfaces = clazz.getInterfaces();
             for (Class<?> i : interfaces) {
                 if (serviceName == null) {
